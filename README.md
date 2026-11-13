@@ -1,28 +1,38 @@
 # Registro de sintomas de TDAH em adultos (estrutura DIVA-5) com PDF
 
-Site estático (GitHub Pages) + um Cloudflare Worker pequeno. A pessoa preenche
-o registro no computador ou no celular (Parte 1 – desatenção, Parte 2 –
-hiperatividade/impulsividade, Parte 3 – início e prejuízos), baixa um PDF com
-resumo, folha de pontuação e todas as respostas e, se quiser, recebe o mesmo
-PDF por e-mail. O PDF serve para ser analisado depois por um profissional.
+Site estático para GitHub Pages. A pessoa preenche as três partes do registro
+no computador ou celular e baixa um PDF com resumo, pontuação e respostas.
+**O formulário e o PDF funcionam sem Cloudflare, Turnstile, chave de API ou
+servidor próprio.** A biblioteca de PDF está incluída no próprio site, sem CDN.
 
 > **Não é um diagnóstico.** A DIVA-5 é uma entrevista aplicada por um
-> profissional de saúde. O site diz isso na abertura, no resultado, no PDF e no e-mail.
-**Nenhum e-mail ou resposta é armazenado** — não há banco de dados, planilha,
-cookie, analytics nem log.
+> profissional de saúde. O registro mantém esse aviso na página e no PDF.
 
-```
-Navegador ──(respostas + e-mail + token anti-robô)──▶ Worker ──▶ Resend (envia o e-mail)
-   ▲                                                   │
-   └───────────────────── PDF ◀─────────────────────────┘
-```
+No modo padrão, as respostas ficam apenas na memória do navegador: não são
+enviadas a um servidor, nem gravadas em cookies, armazenamento local ou banco
+de dados. O PDF baixado fica no aparelho da pessoa. Recarregar a página apaga
+as respostas do formulário. O serviço de hospedagem ainda recebe os acessos
+aos arquivos do site.
 
-## Por que precisa de um Worker?
+## Publicar o formulário com PDF no GitHub Pages
 
-O GitHub Pages só serve arquivos estáticos: ele não consegue enviar e-mail.
-Enviar e-mail exige uma chave de API, e uma chave colocada no site fica visível
-para qualquer pessoa (e seria usada para mandar spam em seu nome). Por isso a
-chave fica no Worker, como *secret* criptografado, nunca no código.
+1. Envie os arquivos para seu repositório.
+2. Abra **Settings → Pages → Deploy from a branch → main → /docs → Save**.
+3. Acesse o link publicado e clique em **Começar**.
+
+Se o Pages estiver configurado para a raiz (`/`), `index.html` encaminha para
+`docs/`. O arquivo `.nojekyll` mantém a publicação estática nessa configuração.
+Deixe `docs/config.js` com os dois valores vazios para usar o PDF local.
+
+## Servidor e envio por e-mail (opcionais)
+
+Um Cloudflare Worker só é necessário para usar geração no servidor e envio
+por e-mail. Ao configurar **WORKER_URL e TURNSTILE_SITE_KEY**, o site passa a
+usar esse modo e mostra as opções de e-mail e a verificação anti-robô. A chave
+do serviço de e-mail fica no Worker, nunca no navegador.
+
+As proteções abaixo se referem a esse modo opcional. Ele não é necessário
+para preencher, calcular o resumo ou baixar o PDF no GitHub Pages.
 
 ## O que protege contra abuso
 
@@ -41,18 +51,17 @@ chave fica no Worker, como *secret* criptografado, nunca no código.
 **Seja honesto com quem usa o site:** o *seu* sistema não guarda nada, mas
 qualquer e-mail enviado passa por um provedor (aqui, o Resend), que mantém um
 registro de entrega por alguns dias, e a Cloudflare/GitHub veem o IP de quem
-acessa, como em qualquer site. Se quiser zero terceiros, deixe o envio por
-e-mail desligado (não configure `RESEND_API_KEY`): o site continua funcionando
-só com o download.
+acessa, como em qualquer site. Para manter as respostas apenas no aparelho, deixe os dois valores de
+`docs/config.js` vazios e use o PDF local.
 
-## Como publicar (sem instalar nada no computador)
+## Como configurar o servidor opcional
 
-Você vai precisar de contas gratuitas no **GitHub**, na **Cloudflare** e no
+Para este modo opcional, use contas no **GitHub**, na **Cloudflare** e no
 **Resend** (este último só se quiser o envio por e-mail; ele exige um domínio
 seu verificado para mandar e-mails a qualquer pessoa).
 
 ### 1. Repositório
-Crie um repositório público no GitHub e envie estes arquivos.
+Use o repositório onde o site já está publicado.
 
 ### 2. Turnstile (anti-robô)
 Cloudflare → **Turnstile** → *Add widget* → domínio `SEU-USUARIO.github.io`.
@@ -81,6 +90,9 @@ No repositório: *Settings → Secrets and variables → Actions → New reposit
 ### 6. Publicar o Worker
 *Actions → Deploy do Worker → Run workflow*. No final do log aparece o
 endereço, algo como `https://resultado-teste.SEU-SUBDOMINIO.workers.dev`.
+Para republicar automaticamente após alterações, crie a variável de repositório
+`ENABLE_WORKER_DEPLOY` com valor `true`. Sem ela, o workflow só publica
+quando executado manualmente; o Pages e o PDF local continuam independentes.
 
 ### 7. Configurar e publicar o site
 Edite `docs/config.js` com o endereço do Worker e a **Site Key** do Turnstile
@@ -101,8 +113,8 @@ Com Python instalado, na pasta do projeto:
 python -m http.server 8000
 ```
 
-e abra `http://localhost:8000/docs/`. O formulário e a navegação funcionam;
-para gerar o PDF é preciso o Worker publicado (passos acima).
+e abra `http://localhost:8000/docs/`. O formulário, a navegação e o download
+do PDF funcionam sem publicar um Worker.
 
 A DIVA-5 é uma publicação da **DIVA Foundation** (Haia, Holanda), de
 J. J. S. Kooij, M. H. Francken e T. I. Bron, e contém trechos do DSM-5
@@ -123,12 +135,12 @@ registro. O aviso de que o registro não é um diagnóstico foi mantido.
 
 Para uso em site público, mantenha a orientação de solicitar autorização à
 DIVA Foundation antes de publicar os textos. A configuração de Worker e
-Turnstile continua sendo necessária para gerar e baixar o PDF.
+Turnstile só é necessária para ativar o modo de servidor/e-mail.
 
 Depois de publicado, **não mude a ordem nem a quantidade** dos exemplos sem
 republicar o Worker: as respostas são enviadas pela posição de cada exemplo.
-O Worker é republicado sozinho quando `docs/diva-data.js` ou `docs/scoring.js`
-mudam na branch `main`.
+Com `ENABLE_WORKER_DEPLOY=true`, o Worker é republicado quando os dados,
+a pontuação ou o gerador compartilhado de PDF mudam na branch `main`.
 
 ## Regras de pontuação usadas (folha de pontuação da DIVA-5)
 - Infância: 3 ou mais sintomas de desatenção **e/ou** de hiperatividade/impulsividade.
@@ -160,9 +172,12 @@ docs/            site (GitHub Pages) – funciona em celular e computador
   app.js         etapas, validação e envio (não guarda nada)
   diva-data.js   estrutura da DIVA-5 + textos (a preencher)
   scoring.js     validação e folha de pontuação (usado também pelo Worker)
-  config.js      endereço do Worker + Site Key pública
+  config.js      servidor opcional (vazio = PDF no navegador)
+  pdf.js         carrega o gerador local sob demanda
+  pdf-core.js    documento compartilhado com o servidor
+  vendor/        pdf-lib 1.17.1 e licença MIT, hospedados no próprio site
 worker/          Cloudflare Worker
   src/index.js   validação, anti-robô, rate limit, envio do e-mail
-  src/pdf.js     geração do PDF (resumo, pontuação, respostas detalhadas)
+  src/pdf.js     adaptador do gerador compartilhado para o Worker
 .github/workflows/deploy-worker.yml   publica o Worker usando os secrets
 ```

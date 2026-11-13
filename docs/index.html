@@ -28,7 +28,6 @@
   <main class="wrap">
     <noscript><p class="alert">Este questionário precisa de JavaScript ativado.</p></noscript>
     <p id="fill-warning" class="alert" hidden></p>
-    <p id="config-error" class="alert" hidden></p>
 
     <form id="form" novalidate autocomplete="off">
       <!-- Etapa 0: apresentação -->
@@ -47,8 +46,7 @@
         <div class="card notice">
           <h2>Importante</h2>
           <p id="disclaimer"></p>
-          <p class="small muted">Privacidade: não pedimos nome. Nada do que você responder é salvo neste site
-            ou no servidor. O resultado é baixado no seu aparelho e, se você quiser, enviado ao seu e-mail.</p>
+          <p id="privacy-note" class="small muted">Privacidade: não pedimos nome. Suas respostas ficam neste navegador e o PDF é gerado no seu aparelho, sem enviar as respostas a um servidor.</p>
         </div>
       </section>
 
@@ -94,16 +92,19 @@
           <dl class="summary" id="summary"></dl>
         </div>
         <div class="card">
-          <label for="email" class="label">Receber o PDF por e-mail <span class="muted">(opcional)</span></label>
-          <input id="email" name="email" type="email" inputmode="email" maxlength="254"
-                 autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="voce@exemplo.com">
-          <label class="check" id="consent-wrap" hidden>
-            <input id="consent" type="checkbox">
-            <span>Autorizo o envio deste registro, que contém informações de saúde, para o e-mail acima.
-              O e-mail é usado só para este envio e não é armazenado.</span>
-          </label>
-          <p class="hint">Sem e-mail, o PDF é apenas baixado no seu aparelho.</p>
-          <div id="turnstile" class="turnstile"></div>
+          <p id="local-pdf-note" class="hint">Baixe o PDF com o resumo e as respostas para guardar ou compartilhar com um profissional.</p>
+          <div id="email-options" hidden>
+            <label for="email" class="label">Receber o PDF por e-mail <span class="muted">(opcional)</span></label>
+            <input id="email" name="email" type="email" inputmode="email" maxlength="254"
+                   autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="voce@exemplo.com">
+            <label class="check" id="consent-wrap" hidden>
+              <input id="consent" type="checkbox">
+              <span>Autorizo o envio deste registro, que contém informações de saúde, para o e-mail acima.
+                O e-mail é usado só para este envio e não é armazenado.</span>
+            </label>
+            <p class="hint">Sem e-mail, o PDF é apenas baixado no seu aparelho.</p>
+            <div id="turnstile" class="turnstile"></div>
+          </div>
           <button id="submit" type="submit" class="primary wide">Gerar e baixar PDF</button>
           <p id="status" class="status" role="status" aria-live="polite"></p>
         </div>

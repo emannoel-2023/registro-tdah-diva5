@@ -3,7 +3,7 @@ name: Deploy do Worker
 on:
   push:
     branches: [main]
-    paths: ["worker/**", "docs/diva-data.js", "docs/scoring.js", ".github/workflows/deploy-worker.yml"]
+    paths: ["worker/**", "docs/diva-data.js", "docs/scoring.js", "docs/pdf-core.js", ".github/workflows/deploy-worker.yml"]
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || vars.ENABLE_WORKER_DEPLOY == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

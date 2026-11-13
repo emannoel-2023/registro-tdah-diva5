@@ -5,7 +5,8 @@ import { score } from "./scoring.js";
 // Regras de privacidade deste arquivo:
 // - nunca usa localStorage/sessionStorage/IndexedDB/cookies;
 // - nunca usa innerHTML (tudo via textContent => sem XSS);
-// - as respostas só existem na página e no corpo de UMA requisição;
+// - sem servidor configurado, respostas e PDF ficam somente no navegador;
+// - com servidor configurado, as respostas vão no corpo de UMA requisição;
 //   o e-mail é apagado do campo assim que a resposta chega.
 
 const $ = (id) => document.getElementById(id);
@@ -233,8 +234,7 @@ function enterFinalStep() {
   const r = score(collect());
   if (r) fillSummary($("summary"), r);
   if (!configured) {
-    $("submit").disabled = true;
-    setStatus("Site ainda não configurado: preencha WORKER_URL e TURNSTILE_SITE_KEY em config.js.", "error");
+    setStatus("O PDF será gerado no seu aparelho, sem enviar suas respostas.");
     return;
   }
   ensureTurnstile();
@@ -303,11 +303,29 @@ const ERRORS = {
 
 async function onSubmit(ev) {
   ev.preventDefault();
-  if (step !== LAST_STEP || !configured) return;
+  if (step !== LAST_STEP) return;
 
   const answers = collect();
-  if (!score(answers)) {
+  const summary = score(answers);
+  if (!summary) {
     setStatus("Há respostas faltando. Volte e confira as etapas anteriores.", "error");
+    return;
+  }
+
+  if (!configured) {
+    const btn = $("submit");
+    btn.disabled = true;
+    setStatus("Gerando seu PDF…");
+    try {
+      const { buildPdf } = await import("./pdf.js");
+      const bytes = await buildPdf(summary);
+      showResult(summary, false, downloadPdf(bytes));
+      setStatus("");
+    } catch {
+      setStatus("Não foi possível gerar o PDF. Confira sua conexão e tente novamente; suas respostas continuam nesta página.", "error");
+    } finally {
+      btn.disabled = false;
+    }
     return;
   }
 
@@ -368,7 +386,7 @@ async function onSubmit(ev) {
 
 function showResult(data, askedEmail, url) {
   dirty = false;
-  let note = "O PDF foi baixado no seu aparelho.";
+  let note = "Seu PDF está pronto. Se o download não iniciar, use o link abaixo.";
   if (askedEmail) {
     note += data.emailSent
       ? " Uma cópia foi enviada para o e-mail informado (confira também o spam)."
@@ -424,11 +442,10 @@ function init() {
     if (dirty) e.preventDefault();
   });
 
-  if (!configured) {
-    const e = $("config-error");
-    e.textContent = "Site ainda não configurado: preencha WORKER_URL e TURNSTILE_SITE_KEY em config.js.";
-    e.hidden = false;
-  } else {
+  $("email-options").hidden = !configured;
+  $("local-pdf-note").hidden = configured;
+  if (configured) {
+    $("privacy-note").textContent = "Privacidade: não pedimos nome. Para gerar o PDF, suas respostas são enviadas ao servidor sem cadastro ou banco de dados. Se você autorizar o envio por e-mail, o PDF também passa pelo provedor de e-mail.";
     loadTurnstileScript().catch(() => {});
   }
 }

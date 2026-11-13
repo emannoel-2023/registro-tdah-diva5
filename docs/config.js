@@ -3,7 +3,8 @@
 // - TURNSTILE_SITE_KEY: a chave "site key" do Cloudflare Turnstile é pública
 //   por definição. A chave SECRETA fica só no Worker (como secret), nunca aqui.
 //
-// Preencha os dois valores depois de criar o Worker e o widget Turnstile
+// Com os valores vazios, o formulário e o PDF funcionam no próprio navegador.
+// Preencha os dois apenas para ativar o servidor opcional e envio por e-mail
 // (veja o README). Se o Worker estiver num domínio próprio em vez de
 // *.workers.dev, ajuste também o "connect-src" do CSP em index.html.
 
