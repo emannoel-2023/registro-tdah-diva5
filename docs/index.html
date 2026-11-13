@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!--
+    CSP: só carrega scripts deste site e do Cloudflare Turnstile, só conversa
+    com *.workers.dev, bloqueia plugins, <base> e envio de formulários nativos.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src https://*.workers.dev; style-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <!-- strict-origin: envia só o domínio (o Turnstile precisa dele para validar). -->
+  <meta name="referrer" content="strict-origin">
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
+  <title>Registro de Sintomas – TDAH em Adultos</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-title" id="topbar-title">Registro de Sintomas</div>
+      <div class="progress" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text small muted" id="progress-text" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <noscript><p class="alert">Este questionário precisa de JavaScript ativado.</p></noscript>
+    <p id="fill-warning" class="alert" hidden></p>
+    <p id="config-error" class="alert" hidden></p>
+
+    <form id="form" novalidate autocomplete="off">
+      <!-- Etapa 0: apresentação -->
+      <section class="step" data-step="0" data-title="Início">
+        <h1 id="title"></h1>
+        <p id="subtitle" class="muted small"></p>
+        <div class="card">
+          <h2>Como responder</h2>
+          <p id="intro"></p>
+          <ul class="legend-list">
+            <li><strong>Idade adulta:</strong> como você tem estado nos últimos 6 meses ou mais.</li>
+            <li><strong>Infância:</strong> como você era entre os 5 e os 12 anos.</li>
+            <li>Se puder, responda junto com um familiar ou parceiro(a) que conheça você.</li>
+          </ul>
+        </div>
+        <div class="card notice">
+          <h2>Importante</h2>
+          <p id="disclaimer"></p>
+          <p class="small muted">Privacidade: não pedimos nome. Nada do que você responder é salvo neste site
+            ou no servidor. O resultado é baixado no seu aparelho e, se você quiser, enviado ao seu e-mail.</p>
+        </div>
+      </section>
+
+      <section class="step" data-step="1" data-title="Parte 1 de 3 – Atenção" hidden>
+        <h2 class="step-title">Parte 1 – Sintomas de déficit de atenção</h2>
+        <div id="part-A"></div>
+      </section>
+
+      <section class="step" data-step="2" data-title="Parte 2 de 3 – Hiperatividade" hidden>
+        <h2 class="step-title">Parte 2 – Sintomas de hiperatividade / impulsividade</h2>
+        <div id="part-HI"></div>
+      </section>
+
+      <section class="step" data-step="3" data-title="Parte 3 de 3 – Início e prejuízos" hidden>
+        <h2 class="step-title">Parte 3 – Prejuízos devido aos sintomas</h2>
+        <div class="card" id="onset-card">
+          <span class="badge">Início</span>
+          <p class="question" id="onset-question"></p>
+          <p class="hint" id="onset-hint">Marque “Sim” se vários sintomas já estavam presentes antes dos 12 anos de idade.</p>
+          <div class="yn" role="radiogroup" aria-labelledby="onset-question" aria-describedby="onset-hint">
+            <label class="yn-btn"><input type="radio" name="onset" value="1"><span>Sim</span></label>
+            <label class="yn-btn"><input type="radio" name="onset" value="0"><span>Não</span></label>
+          </div>
+          <div id="onset-age-wrap" class="age" hidden>
+            <label for="onset-age">Com que idade os sintomas começaram? <span class="muted">(opcional)</span></label>
+            <input id="onset-age" type="number" inputmode="numeric" min="1" max="99" step="1">
+          </div>
+        </div>
+        <div class="card">
+          <h3>Em quais áreas você tem/teve problemas com esses sintomas?</h3>
+          <p class="hint">Abra cada área e marque o que se aplica. Deixe em branco o que não se aplica.</p>
+          <div class="impair-grid">
+            <div><h4>Idade adulta</h4><div id="impair-adult"></div></div>
+            <div><h4>Infância e adolescência</h4><div id="impair-child"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="step" data-step="4" data-title="Gerar resultado" hidden>
+        <h2 class="step-title">Gerar o PDF</h2>
+        <div class="card">
+          <h3>Resumo das suas respostas</h3>
+          <dl class="summary" id="summary"></dl>
+        </div>
+        <div class="card">
+          <label for="email" class="label">Receber o PDF por e-mail <span class="muted">(opcional)</span></label>
+          <input id="email" name="email" type="email" inputmode="email" maxlength="254"
+                 autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="voce@exemplo.com">
+          <label class="check" id="consent-wrap" hidden>
+            <input id="consent" type="checkbox">
+            <span>Autorizo o envio deste registro, que contém informações de saúde, para o e-mail acima.
+              O e-mail é usado só para este envio e não é armazenado.</span>
+          </label>
+          <p class="hint">Sem e-mail, o PDF é apenas baixado no seu aparelho.</p>
+          <div id="turnstile" class="turnstile"></div>
+          <button id="submit" type="submit" class="primary wide">Gerar e baixar PDF</button>
+          <p id="status" class="status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <nav class="step-nav" id="step-nav">
+        <button type="button" id="prev" class="secondary">Voltar</button>
+        <button type="button" id="next" class="primary">Começar</button>
+      </nav>
+    </form>
+
+    <section id="result" class="card result" hidden>
+      <h2>PDF gerado</h2>
+      <p id="result-note"></p>
+      <dl class="summary" id="result-summary"></dl>
+      <p class="small muted">Este registro não é um diagnóstico. Leve o PDF a um(a) profissional de saúde mental.</p>
+      <button id="restart" type="button" class="secondary">Começar de novo</button>
+    </section>
+
+    <footer class="muted small">
+      Sem cookies, sem analytics, sem armazenamento de respostas ou e-mails.
+    </footer>
+  </main>
+</body>
+</html>

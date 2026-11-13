@@ -1,0 +1,49 @@
+name: Deploy do Worker
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", "docs/diva-data.js", "docs/scoring.js", ".github/workflows/deploy-worker.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências
+        working-directory: worker
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Publicar na Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          # Cada nome abaixo vira um *secret* do Worker, lido do bloco env.
+          secrets: |
+            ALLOWED_ORIGIN
+            TURNSTILE_SECRET
+            RESEND_API_KEY
+            MAIL_FROM
+        env:
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
